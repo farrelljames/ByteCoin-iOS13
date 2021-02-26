@@ -12,6 +12,9 @@ class ViewController: UIViewController {
     @IBOutlet weak var bitcoinLabel: UILabel!
     @IBOutlet weak var currencyLabel: UILabel!
     @IBOutlet weak var currencyPicker: UIPickerView!
+    @IBOutlet weak var cryptoPicker: UIPickerView!
+    @IBOutlet weak var currencySymbol: UIImageView!
+    @IBOutlet weak var infoLabel: UILabel!
     
     var coinManager = CoinManager()
     
@@ -19,6 +22,10 @@ class ViewController: UIViewController {
         super.viewDidLoad()
         currencyPicker.dataSource = self
         currencyPicker.delegate = self
+        
+        cryptoPicker.dataSource = self
+        cryptoPicker.delegate = self
+        
         coinManager.delegate = self
     }
 }
@@ -31,7 +38,13 @@ extension ViewController: UIPickerViewDataSource {
     }
     
     func pickerView(_ pickerView: UIPickerView, numberOfRowsInComponent component: Int) -> Int {
-        return coinManager.currencyArray.count
+        if pickerView == currencyPicker {
+            return coinManager.currencyArray.count
+        }
+        if pickerView == cryptoPicker {
+            return coinManager.cryptoArray.count
+        }
+        return 1
     }
 }
 
@@ -39,21 +52,29 @@ extension ViewController: UIPickerViewDataSource {
 
 extension ViewController: UIPickerViewDelegate {
     func pickerView(_ pickerView: UIPickerView, titleForRow row: Int, forComponent component: Int) -> String? {
-        return coinManager.currencyArray[row]
+        if pickerView == currencyPicker {
+            return coinManager.currencyArray[row]
+        }
+        if pickerView == cryptoPicker {
+            return coinManager.cryptoArray[row]
+        }
+        return nil
     }
     
     func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
-        coinManager.getCoinPrice(for: coinManager.currencyArray[row])
+        coinManager.getCoinPrice(fiat: coinManager.currencyArray[currencyPicker.selectedRow(inComponent: 0)], crypto: coinManager.cryptoArray[cryptoPicker.selectedRow(inComponent: 0)])
     }
 }
 
 //MARK: - CoinManagerDelegate
 
 extension ViewController: CoinManagerDelegate {
-    func didUpdateExchangeRate(_ exchangeRateData: ExchangeRateData) {
+    func didUpdateExchangeRate(_ exchangeRateData: CoinManagerModel) {
         DispatchQueue.main.async {
-            self.bitcoinLabel.text = String.init(format: "%.2f", exchangeRateData.rate)
-            self.currencyLabel.text = exchangeRateData.asset_id_quote
+            self.bitcoinLabel.text = exchangeRateData.rateString
+            self.currencyLabel.text = exchangeRateData.fiatCurrency
+            self.currencySymbol.image = UIImage(systemName: exchangeRateData.fiatName)
+            self.infoLabel.text = "1 \(exchangeRateData.cyrptoCurrency) to \(exchangeRateData.fiatCurrency) Exchange Rate"
         }
     }
     
